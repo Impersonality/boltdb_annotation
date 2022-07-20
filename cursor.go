@@ -282,6 +282,7 @@ func (c *Cursor) searchNode(key []byte, n *node) {
 		}
 		return ret != -1
 	})
+	// index调整为当前node中<key的最大key的index
 	if !exact && index > 0 {
 		index--
 	}

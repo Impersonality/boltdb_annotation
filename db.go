@@ -973,8 +973,8 @@ type meta struct {
 	pageSize uint32
 	flags    uint32
 	root     bucket
-	freelist pgid
-	pgid     pgid
+	freelist pgid // 空闲列表页的id
+	pgid     pgid // 元数据页的id
 	txid     txid
 	checksum uint64
 }
