@@ -15,6 +15,8 @@
 
 8.bucket的nodes变量map[pgid]*node在什么时候会缓存page呢
 
+9.bucket本身也作为value存储在leafnode中，其他key将该page塞满至spill时，bucket也会移动么？
+
 
 ####A
 3.node.rebalance只被bucket.rebalance调用，而bucket.rebalance只在tx.commit调用，调用rebalance后又调用了spill解决node size过大问题
