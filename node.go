@@ -15,7 +15,7 @@ type node struct {
 	spilled    bool
 	key        []byte
 	pgid       pgid
-	parent     *node
+	parent     *node // 可用于查找next_node,pre_node
 	children   nodes
 	inodes     inodes
 }
@@ -422,6 +422,7 @@ func (n *node) rebalance() {
 	}
 
 	// Root node has special handling.
+	// 如果是根节点，且根节点只有一个子节点，将子节点设为新的根节点，并移除旧的根节点
 	if n.parent == nil {
 		// If root node is a branch and only has one node then collapse it.
 		if !n.isLeaf && len(n.inodes) == 1 {
@@ -587,18 +588,20 @@ func (n *node) dump() {
 
 type nodes []*node
 
-func (s nodes) Len() int           { return len(s) }
-func (s nodes) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-func (s nodes) Less(i, j int) bool { return bytes.Compare(s[i].inodes[0].key, s[j].inodes[0].key) == -1 }
+func (s nodes) Len() int      { return len(s) }
+func (s nodes) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+func (s nodes) Less(i, j int) bool {
+	return bytes.Compare(s[i].inodes[0].key, s[j].inodes[0].key) == -1
+}
 
 // inode represents an internal node inside of a node.
 // It can be used to point to elements in a page or point
 // to an element which hasn't been added to a page yet.
 type inode struct {
-	flags uint32
-	pgid  pgid
+	flags uint32 // 0:普通叶节点 1:bucket叶节点
+	pgid  pgid   // innode为branch时才有值
 	key   []byte
-	value []byte
+	value []byte // innode为leaf时才有值
 }
 
 type inodes []inode
