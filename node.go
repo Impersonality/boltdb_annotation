@@ -13,10 +13,10 @@ type node struct {
 	isLeaf     bool
 	unbalanced bool
 	spilled    bool
-	key        []byte
+	key        []byte // innodes[0]'s key so we can find the node in the parent when we spill.
 	pgid       pgid
 	parent     *node // 可用于查找next_node,pre_node
-	children   nodes
+	children   nodes // 新建node cache时可能会对其赋值 (bucket.go L643)
 	inodes     inodes
 }
 
@@ -126,7 +126,7 @@ func (n *node) put(oldKey, newKey, value []byte, pgid pgid, flags uint32) {
 	index := sort.Search(len(n.inodes), func(i int) bool { return bytes.Compare(n.inodes[i].key, oldKey) != -1 })
 
 	// Add capacity and shift nodes if we don't have an exact match and need to insert.
-	exact := (len(n.inodes) > 0 && index < len(n.inodes) && bytes.Equal(n.inodes[index].key, oldKey))
+	exact := len(n.inodes) > 0 && index < len(n.inodes) && bytes.Equal(n.inodes[index].key, oldKey)
 	if !exact {
 		n.inodes = append(n.inodes, inode{})
 		copy(n.inodes[index+1:], n.inodes[index:])
@@ -160,7 +160,7 @@ func (n *node) del(key []byte) {
 // read initializes the node from a page.
 func (n *node) read(p *page) {
 	n.pgid = p.id
-	n.isLeaf = ((p.flags & leafPageFlag) != 0)
+	n.isLeaf = (p.flags & leafPageFlag) != 0
 	n.inodes = make(inodes, int(p.count))
 
 	for i := 0; i < int(p.count); i++ {
@@ -462,7 +462,7 @@ func (n *node) rebalance() {
 
 	// Destination node is right sibling if idx == 0, otherwise left sibling.
 	var target *node
-	var useNextSibling = (n.parent.childIndex(n) == 0)
+	var useNextSibling = n.parent.childIndex(n) == 0
 	if useNextSibling {
 		target = n.nextSibling()
 	} else {

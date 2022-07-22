@@ -17,8 +17,12 @@
 
 9.bucket本身也作为value存储在leafnode中，其他key将该page塞满至spill时，bucket也会移动么？
 
+10.node.spill是从下向上split，也就是从leaf向root split，为什么root node split时要清空children再对parent split一次呢
+
 
 ####A
 3.node.rebalance只被bucket.rebalance调用，而bucket.rebalance只在tx.commit调用，调用rebalance后又调用了spill解决node size过大问题
 
 8.bucket.node函数(bucket.go L643)会缓存page至nodes中，而bucket.node()函数在cursor.node()被调用，cursor.node()在增删查改中被调用
+
+10.因为root node split时其实创建了一个新的node，也就是当前node的parent，而递归只到当前node，清空children避免重复split，因为children只是缓存
