@@ -15,14 +15,28 @@
 
 8.bucket的nodes变量map[pgid]*node在什么时候会缓存page呢
 
-9.bucket本身也作为value存储在leafnode中，其他key将该page塞满至spill时，bucket也会移动么？
+9.inline bucket容量达到限制时，如何分裂成一个普通的bucket呢？
 
 10.node.spill是从下向上split，也就是从leaf向root split，为什么root node split时要清空children再对parent split一次呢
+
+11.node.rebalance除了对当前node进行rebalance，对parent递归（spill会对children递归)，那么如何做到对整颗b+ tree rebalance呢
+
+12.inline bucket分裂成普通bucket后，inline page被删除，rootNode对应的实际page会怎么改变呢
 
 
 ####A
 3.node.rebalance只被bucket.rebalance调用，而bucket.rebalance只在tx.commit调用，调用rebalance后又调用了spill解决node size过大问题
 
+6.bolt的crud从bucket开始，每个bucket有自己的缓存，所以缓存生命周期和bucket对象一致
+
+7.因为inline bucket的page_id=0，而且该page在物理页面中是跟在bucket head后面，那么通过bucket函数获取bucket对象时，应该把该page一起读出
+
 8.bucket.node函数(bucket.go L643)会缓存page至nodes中，而bucket.node()函数在cursor.node()被调用，cursor.node()在增删查改中被调用
 
+9.inline bucket只有一个rootNode，rootNode split成两个leafNode，然后新生成一个parent作为rootNode，bucket的page_id记录该rootNode
+
 10.因为root node split时其实创建了一个新的node，也就是当前node的parent，而递归只到当前node，清空children避免重复split，因为children只是缓存
+
+11.bucket的nodes缓存了增删查改的node（叶节点)，那么rebalance实际上是从叶节点向root rebalance。而spill是从root向下 spill
+
+12.和普通的key删除类似，其实增删查改都类似，内存中的node转换为page写入磁盘，所以boltdb的读写的单位都是page，读写一个key和一页的key消耗相同
