@@ -23,6 +23,10 @@
 
 12.inline bucket分裂成普通bucket后，inline page被删除，rootNode对应的实际page会怎么改变呢
 
+13.事务的提交和回滚是如何实现的
+
+14.boltdb的MVCC是如何实现的
+
 
 ####A
 3.node.rebalance只被bucket.rebalance调用，而bucket.rebalance只在tx.commit调用，调用rebalance后又调用了spill解决node size过大问题
@@ -40,3 +44,8 @@
 11.bucket的nodes缓存了增删查改的node（叶节点)，那么rebalance实际上是从叶节点向root rebalance。而spill是从root向下 spill
 
 12.和普通的key删除类似，其实增删查改都类似，内存中的node转换为page写入磁盘，所以boltdb的读写的单位都是page，读写一个key和一页的key消耗相同
+
+13.数据修改先只存在于node，也就是内存中，在commit函数中的spill，实现node向page的转化，也就是写入磁盘。所以只要不commit，数据不会写入磁盘
+
+14.数据修改后spill写入磁盘时，每次都是获取一个新page，那么旧page只要不删除，就不会影响别的事务读。删除page在freepage.release实现，在每个事务开始时，会将小于
+   当前db正在运行的事务中最小的事务的pending page真正删除。也就是确定该页面没有任何事务所使用，才会加入到freepage（删除）

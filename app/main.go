@@ -22,6 +22,7 @@ func main() {
 				return err1
 			}
 		}
+		tx.Rollback()
 		return nil
 	})
 	if err != nil {
